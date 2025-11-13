@@ -1,4 +1,4 @@
-from .core import State, dedup_candidates
+from .core import State, dedup_candidates, Query
 from typing import List
 
 
@@ -21,6 +21,15 @@ class Stack(Op):
         for op in self.ops:
             state = op(state)
         return state
+
+    def __call__(self, state: State | str) -> State:
+        match state:
+            case State():
+                return self.forward(state)
+            case str():
+                return self.forward(State(query=Query(text=state)))
+            case _:
+                raise ValueError(f"Expected State or str, got {type(state)}")
 
 
 class Branch(Op):

@@ -51,7 +51,7 @@ mem0 = qr.Stack(
 
 
 if __name__ == "__main__":
-    state = mem0(qr.State(query=qr.Query(text="what is spec-driven development?")))
+    state = mem0("what is spec-driven development?")
     print(state.answer)
     for ev in state.trace:
         print(ev.op, ev.payload)

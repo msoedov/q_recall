@@ -1,7 +1,7 @@
 # q_recall
 **Post-RAG era Search Framework — Context-Rich, Index-Free**
 
-`q_recall` is a lightweight, Keras-like agentic search framework built for the **post-RAG era**.
+`q_recall` is a lightweight ~~vitamin supplement~~, Keras-like agentic search framework built for the **post-RAG era**.
 It combines **LLM-driven reasoning** with, **Zero indexing**, **direct file search (grep + glob)**, **reference following**, and **context enrichment** — allowing agents to *read and reason end-to-end*, without embeddings or indexing.
 
 > _"Retrieval was for context-poor models. Agentic search is for context-rich intelligence."_
@@ -26,7 +26,7 @@ In the new context-abundant world (2M+ tokens), we no longer need heavy RAG pipe
 
 ### Install
 ```bash
-git clone https://github.com/yourname/q_recall.git
+git clone https://github.com/msoedov/q_recall.git
 cd q_recall
 pip install -e .
 ```
@@ -58,7 +58,7 @@ mem0 = qr.Stack(
     qr.ComposeAnswer()
 )
 
-state = mem0(qr.State(query=qr.Query(text="Describe a counter-dependent personality")))
+state = mem0("Describe a counter-dependent personality")
 print(state.answer)
 ```
 
@@ -113,7 +113,7 @@ mem0 = qr.Stack(
 
 
 if __name__ == "__main__":
-    state = mem0(qr.State(query=qr.Query(text="what is spec-driven development?")))
+    state = mem0("what is spec-driven development?")
     print(state.answer)
     for ev in state.trace:
         print(ev.op, ev.payload)
