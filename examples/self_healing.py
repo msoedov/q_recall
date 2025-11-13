@@ -1,6 +1,5 @@
 import q_recall as qr
 
-
 PlanB = qr.Stack(
     qr.Glob(dir="data", pattern="**/*.(md|txt|py|ts|srt)"),
     qr.Ranking(max_candidates=30),

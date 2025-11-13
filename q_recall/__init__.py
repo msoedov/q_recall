@@ -1,18 +1,17 @@
-from .core import State, Query, Candidate, Evidence
-from .ops_agent import Stack, Branch, Loop
-from .ops_search import Grep, Glob
-from .ops_rank import Ranking, Concat, ContextEnricher, Deduplicate, Lambda
 from .answer import ComposeAnswer, LLMSearchTermExtractor, MultilingualNormalizer
-
+from .core import Candidate, Evidence, Query, State
+from .ops_agent import Branch, Loop, Stack
 from .ops_heal import (
-    SelfHeal,
-    Health,
-    StagnationGuard,
     AdaptiveConcat,
-    SafeGrep,
     AutoHealPass,
+    Health,
+    SafeGrep,
+    SelfHeal,
+    StagnationGuard,
     has_candidates,
     has_evidence,
     widen_search_terms,
 )
+from .ops_rank import Concat, ContextEnricher, Deduplicate, Lambda, Ranking
 from .ops_refs import ReferenceFollower
+from .ops_search import Glob, Grep

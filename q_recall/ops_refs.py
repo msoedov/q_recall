@@ -1,6 +1,7 @@
 import re
-from typing import Iterable, List, Set
-from .core import State, Candidate, dedup_candidates
+from collections.abc import Iterable
+
+from .core import Candidate, State, dedup_candidates
 from .ops_search import Grep
 
 
@@ -16,7 +17,7 @@ class ReferenceFollower:
     def __init__(
         self,
         dir: str,
-        patterns: List[str] = None,
+        patterns: list[str] = None,
         max_targets: int = 64,
         per_target_boost: float = 0.4,
     ):
@@ -39,7 +40,7 @@ class ReferenceFollower:
         targets = self._extract_targets(text_source)
         queries = self._normalize_targets(targets)[: self.max_targets]
 
-        new_cands: List[Candidate] = []
+        new_cands: list[Candidate] = []
         for q in queries:
             # Run a focused grep per target
             s2 = Grep(dir=self.dir)(State(query=state.query.__class__(text=q)))
@@ -71,16 +72,16 @@ class ReferenceFollower:
                 parts.append(c.snippet)
         return "\n\n".join(parts)
 
-    def _extract_targets(self, text: str) -> List[str]:
-        found: Set[str] = set()
+    def _extract_targets(self, text: str) -> list[str]:
+        found: set[str] = set()
         for pat in self.patterns:
             for m in re.finditer(pat, text, flags=re.IGNORECASE):
                 token = m.group(0).strip()
                 found.add(self._normalize_token(token))
         return sorted(found)
 
-    def _normalize_targets(self, tokens: Iterable[str]) -> List[str]:
-        out: List[str] = []
+    def _normalize_targets(self, tokens: Iterable[str]) -> list[str]:
+        out: list[str] = []
         for t in tokens:
             out.append(t)
             m = re.match(r"(?i)(?:section|sec\.|§)\s+(\d+(?:\.\d+)*)", t)

@@ -1,5 +1,5 @@
-from .core import State, Evidence, dedup_candidates
-from typing import List
+
+from .core import Evidence, State, dedup_candidates
 
 
 class Ranking:

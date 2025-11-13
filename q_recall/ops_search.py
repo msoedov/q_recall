@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
-from .core import State, Candidate
+
+from .core import Candidate, State
 
 
 class Grep:

@@ -1,4 +1,4 @@
-from .core import State, dedup_candidates, Query
+from .core import Query, State, dedup_candidates
 from .utils import timer
 
 

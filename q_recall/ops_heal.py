@@ -1,21 +1,21 @@
-# -*- coding: utf-8 -*-
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Callable
-import time, re
-from .core import State, Evidence
-from .ops_agent import Op, Stack, Branch
-from .ops_search import Grep, Glob
+
+from .core import Evidence, State
+from .ops_agent import Branch, Op, Stack
 from .ops_rank import Concat
+from .ops_search import Glob, Grep
 
 
 # ---------- Health model ----------
 @dataclass
 class Health:
     ok: bool = True
-    reason: Optional[str] = None
+    reason: str | None = None
     recovered: bool = False
     attempts: int = 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
 
 
 # ---------- Predicates & refiners ----------
@@ -52,9 +52,9 @@ class SelfHeal(Op):
         name: str = "SelfHeal",
         retries: int = 2,
         backoff: float = 0.0,
-        fallback: Optional[Op] = None,
-        post_condition: Optional[Callable[[State], bool]] = None,
-        on_weak: Optional[Callable[[State], State]] = None,
+        fallback: Op | None = None,
+        post_condition: Callable[[State], bool] | None = None,
+        on_weak: Callable[[State], State] | None = None,
         breaker_threshold: int = 4,
         breaker_cooldown: float = 0.0,
     ):
@@ -179,7 +179,7 @@ class AdaptiveConcat(Concat):
 class StagnationGuard(Op):
     """If nothing improves, trigger an exploration/refinement action."""
 
-    def __init__(self, min_gain=1, on_stall: Optional[Callable[[State], State]] = None):
+    def __init__(self, min_gain=1, on_stall: Callable[[State], State] | None = None):
         self.min_gain = min_gain
         self.on_stall = on_stall or (lambda s: widen_search_terms(s))
         self.name = "StagnationGuard"
