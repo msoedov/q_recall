@@ -20,6 +20,43 @@ In the new context-abundant world (2M+ tokens), we no longer need heavy RAG pipe
 - **Traceable execution** — every step is logged
 - **LLM-ready hooks** — plug in real LLMs for extraction or answering
 
+## 🔧 Mental Model (read this first)
+
+`q_recall` is built around two core abstractions:
+
+### **1. `State`**
+
+Each operation receives and returns a `State` object, which holds:
+
+``` python
+class State:
+    query: str                # user query
+    candidates: list          # found matches (file paths + snippets)
+    evidence: str | None      # concatenated readable context
+    answer: str | None        # final synthesized answer
+    trace: list[TraceEvent]   # detailed execution log
+```
+
+Ops mutate fields intentionally and log their steps in `trace`.
+
+### **2. `Op` (operation)**
+
+Every operator is a function:
+
+    State → State
+
+Examples: `Grep`, `Glob`, `Ranking`, `ContextEnricher`, `ComposeAnswer`.
+
+### **3. `Stack`, `Branch`, and control flow**
+
+-   `Stack` --- sequential pipeline (like `keras.Sequential`)
+-   `Branch` --- parallel search paths that merge
+-   `SelfHeal` --- retries, fallback ops, post-conditions
+-   `StagnationGuard` --- detects stalls and widens search
+-   `Loop` --- repetition until convergence
+
+------------------------------------------------------------------------
+
 ---
 
 ## 🧩 Quick Start
@@ -38,26 +75,50 @@ python examples/basic.py
 
 ---
 
-## Minimal Example
+### Minimal Pipeline
 
-```python
+A true minimal example: search → build context → answer.
+
+``` python
 import q_recall as qr
 
-mem0 = qr.Stack(
-    qr.MultilingualNormalizer(),
-    qr.Branch(
-        qr.Stack(qr.Grep(dir="data"), qr.Ranking(max_candidates=10)),
-        qr.Stack(qr.Glob(dir="data"), qr.Ranking(max_candidates=5)),
-    ),
-    qr.Deduplicate(),
+mem = qr.Stack(
+    qr.Grep(dir="data"),
     qr.ContextEnricher(max_tokens=1000),
     qr.Concat(max_window_size=10_000),
-    qr.ComposeAnswer()
+    qr.ComposeAnswer(),
 )
 
-state = mem0("Describe a counter-dependent personality")
+state = mem("Describe post rag pipeline")
 print(state.answer)
 ```
+
+## 🛠 Self-Healing Search Pipelines
+
+`SelfHeal` wraps any op with retries, fallback, and post-conditions.
+
+``` python
+safe_grep = qr.SelfHeal(
+    op=qr.Grep(dir="data"),
+    fallback=qr.Grep(dir="data", case_insensitive=True),
+    post_condition=qr.has_candidates,
+)
+
+pipeline = qr.Stack(
+    safe_grep,
+    qr.Ranking(max_candidates=10),
+    qr.ContextEnricher(max_tokens=2000),
+    qr.Concat(max_window_size=20_000),
+    qr.ComposeAnswer(prompt="Provide a concise, evidence-based answer."),
+)
+
+state = pipeline("Explain spec-driven development")
+print(state.answer)
+```
+
+This pattern is the backbone for building robust agents without
+overengineering.
+
 
 ## 🛠 Self-Healing Search Agent
 
@@ -232,26 +293,18 @@ code_search = qr.Stack(
 
 ---
 
-## 📦 Project Structure
 
-```
-q_recall/
-├── q_recall/
-│   ├── __init__.py
-│   ├── core.py
-│   ├── ops_search.py
-│   ├── ops_rank.py
-│   ├── ops_agent.py
-│   ├── answer.py
-│   ├── db.py
-│   └── utils.py
-├── examples/
-│   ├── basic.py
-│   └── sec_lease.py
-├── README.md
-└── pyproject.toml
-```
+------------------------------------------------------------------------
 
+## 🛑 When *not* to use q_recall
+
+-   You need \<50ms latency across millions of documents.
+-   You need semantic similarity across diverse languages.
+-   Your data is already in a vector DB.
+
+`q_recall` is for **developer-scale agentic search over local files**.
+
+-----------------------
 ---
 
 ## 🔬 Design Philosophy
