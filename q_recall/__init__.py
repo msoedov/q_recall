@@ -3,7 +3,6 @@ from .ops_agent import Stack, Branch, Loop
 from .ops_search import Grep, Glob
 from .ops_rank import Ranking, Concat, ContextEnricher, Deduplicate, Lambda
 from .answer import ComposeAnswer, LLMSearchTermExtractor, MultilingualNormalizer
-from .db import ParadigmDB
 
 from .ops_heal import (
     SelfHeal,

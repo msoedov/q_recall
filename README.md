@@ -43,9 +43,6 @@ python examples/basic.py
 ```python
 import q_recall as qr
 
-db = qr.ParadigmDB()
-db.register_fs("data", "./data")
-
 mem0 = qr.Stack(
     qr.MultilingualNormalizer(),
     qr.Branch(

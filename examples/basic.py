@@ -1,11 +1,5 @@
 import q_recall as qr
 
-# Register a data directory (create ./data and add some .txt files to try this).
-db = qr.ParadigmDB()
-db.register_fs(
-    "data", "../data"
-)  # (not strictly needed for Grep/Glob which take dir directly)
-
 mem0 = qr.Stack(
     qr.MultilingualNormalizer(),
     qr.Branch(
