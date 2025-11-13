@@ -6,6 +6,7 @@ mem0 = qr.Stack(
         qr.Stack(qr.Grep(dir="../data"), qr.Ranking(max_candidates=10)),
         qr.Stack(qr.Glob(dir="../data"), qr.Ranking(max_candidates=5)),
     ),
+    qr.Lambda(lambda state: state),
     qr.Deduplicate(),
     qr.ContextEnricher(max_tokens=1000),
     qr.Concat(max_window_size=10_000),
