@@ -11,3 +11,5 @@ scripts/
 docx/g
 /venv
 *.csv
+data/
+data_xl/

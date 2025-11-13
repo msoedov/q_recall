@@ -2,14 +2,14 @@ import q_recall as qr
 
 
 PlanB = qr.Stack(
-    qr.Glob(dir="../data", pattern="**/*.(md|txt|py|ts|srt)"),
+    qr.Glob(dir="data", pattern="**/*.(md|txt|py|ts|srt)"),
     qr.Ranking(max_candidates=30),
 )
 
 mem0 = qr.Stack(
     qr.MultilingualNormalizer(),
     qr.SelfHeal(
-        op=qr.Stack(qr.Grep(dir="../data"), qr.Ranking(max_candidates=10)),
+        op=qr.Stack(qr.Grep(dir="data"), qr.Ranking(max_candidates=10)),
         fallback=PlanB,
         post_condition=lambda s: qr.has_candidates(s, 1),
         on_weak=lambda s: qr.widen_search_terms(

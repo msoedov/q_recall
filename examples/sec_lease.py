@@ -2,8 +2,10 @@ import q_recall as qr
 
 lease_agent = qr.Stack(
     qr.Branch(
-        qr.Stack(qr.Grep(dir="sec"), qr.Ranking(max_candidates=20)),
-        qr.Stack(qr.Glob(dir="sec", pattern="**/*.txt"), qr.Ranking(max_candidates=5)),
+        qr.Stack(qr.Grep(dir="data"), qr.Ranking(max_candidates=20)),
+        qr.Stack(
+            qr.Glob(dir="data_xl", pattern="**/*.txt"), qr.Ranking(max_candidates=5)
+        ),
     ),
     qr.Deduplicate(),
     qr.ContextEnricher(max_tokens=2000),
