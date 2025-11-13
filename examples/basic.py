@@ -16,5 +16,4 @@ mem0 = qr.Stack(
 if __name__ == "__main__":
     state = mem0("What is the meaning of life?")
     print(state.answer)
-    for ev in state.trace:
-        print(ev.op, ev.payload)
+    state.explain_trace()

@@ -44,6 +44,10 @@ class State:
     def log(self, op, **payload):
         self.trace.append(TraceEvent(op, payload))
 
+    def explain_trace(self):
+        for ev in self.trace:
+            print(ev.op, ev.payload)
+
 
 def dedup_candidates(cands: List[Candidate]) -> List[Candidate]:
     seen, out = set(), []

@@ -22,5 +22,4 @@ if __name__ == "__main__":
     q = "Total lease obligations including discontinued ops and terminations"
     state = lease_agent(qr.State(query=qr.Query(text=q)))
     print(state.answer)
-    for ev in state.trace:
-        print(ev.op, ev.payload)
+    state.explain_trace()

@@ -51,12 +51,12 @@ class SelfHeal(Op):
         op: Op,
         name: str = "SelfHeal",
         retries: int = 2,
-        backoff: float = 0.3,
+        backoff: float = 0.0,
         fallback: Optional[Op] = None,
         post_condition: Optional[Callable[[State], bool]] = None,
         on_weak: Optional[Callable[[State], State]] = None,
         breaker_threshold: int = 4,
-        breaker_cooldown: float = 15.0,
+        breaker_cooldown: float = 0.0,
     ):
         self.op = op
         self.name = name
