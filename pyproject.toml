@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "q_recall"
+version = "0.1.0"
+description = "Post-RAG era search framework — context-rich, index-free."
+authors = [{ name = "Alexander Myasoedov", email = "msoedov@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
