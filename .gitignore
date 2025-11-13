@@ -1,0 +1,13 @@
+*.db
+*.py[cod]
+.web
+__pycache__/
+failures.csv
+runs/
+*.todo
+logs/
+inv/
+scripts/
+docx/g
+/venv
+*.csv
