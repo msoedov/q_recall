@@ -1,4 +1,4 @@
-# q_recall 🧠
+# q_recall
 **Post-RAG era Search Framework — Context-Rich, Index-Free**
 
 `q_recall` is a lightweight, Keras-like agentic search framework built for the **post-RAG era**.
