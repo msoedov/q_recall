@@ -13,3 +13,4 @@ docx/g
 *.csv
 data/
 data_xl/
+spec.py

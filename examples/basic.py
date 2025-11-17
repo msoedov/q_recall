@@ -17,3 +17,6 @@ if __name__ == "__main__":
     state = mem0("What is the meaning of life?")
     print(state.answer)
     state.explain_trace()
+    from q_recall import banner
+
+    banner.banner()
