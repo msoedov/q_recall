@@ -2,6 +2,7 @@ import q_recall as qr
 
 mem0 = qr.Stack(
     qr.MultilingualNormalizer(),
+    qr.WidenSearchTerms(),
     qr.Branch(
         qr.Stack(qr.Grep(dir="./data"), qr.Ranking(max_candidates=10)),
         qr.Stack(qr.Glob(dir="./data_xl"), qr.Ranking(max_candidates=5)),

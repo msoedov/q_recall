@@ -8,6 +8,7 @@ from .ops_heal import (
     SafeGrep,
     SelfHeal,
     StagnationGuard,
+    WidenSearchTerms,
     has_candidates,
     has_evidence,
     widen_search_terms,

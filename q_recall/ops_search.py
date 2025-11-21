@@ -19,8 +19,7 @@ class Grep:
         self.name = "Grep"
 
     def __call__(self, state: State) -> State:
-        q = state.query.text
-        q_re = re.escape(q)
+        terms = state.query.meta.get("search_terms") or [state.query.text]
         hits = []
         for p in self.root.glob(self.file_glob):
             if not p.is_file() or self.ignore.search(str(p)):
@@ -29,21 +28,25 @@ class Grep:
                 txt = p.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 continue
-            for m in re.finditer(q_re, txt, flags=re.IGNORECASE):
-                start = max(0, m.start() - 400)
-                end = min(len(txt), m.end() + 400)
-                snippet = txt[start:end]
-                line_no = txt.count("\n", 0, m.start()) + 1
-                hits.append(
-                    Candidate(
-                        uri=f"file://{p}",
-                        score=1.0,
-                        snippet=snippet,
-                        meta={"line": line_no},
+            for term in terms:
+                if not term:
+                    continue
+                q_re = re.escape(term)
+                for m in re.finditer(q_re, txt, flags=re.IGNORECASE):
+                    start = max(0, m.start() - 400)
+                    end = min(len(txt), m.end() + 400)
+                    snippet = txt[start:end]
+                    line_no = txt.count("\n", 0, m.start()) + 1
+                    hits.append(
+                        Candidate(
+                            uri=f"file://{p}",
+                            score=1.0,
+                            snippet=snippet,
+                            meta={"line": line_no, "term": term},
+                        )
                     )
-                )
         state.candidates += hits
-        state.log("grep", matches=len(hits))
+        state.log("grep", matches=len(hits), terms=len(terms))
         return state
 
 

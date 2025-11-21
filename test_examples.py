@@ -5,7 +5,7 @@ def test_basic():
     from examples.basic import mem0
 
     state = mem0("what is spec-driven development?")
-    assert len(state.trace) == snapshot(26)
+    assert len(state.trace) == snapshot(28)
 
 
 def test_sec_lease():
@@ -19,4 +19,4 @@ def test_self_healing():
     from examples.self_healing import mem0
 
     state = mem0("what is spec-driven development?")
-    assert len(state.trace) == snapshot(62)
+    assert len(state.trace) == snapshot(26)

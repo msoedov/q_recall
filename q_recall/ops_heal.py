@@ -1,3 +1,4 @@
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -28,12 +29,54 @@ def has_evidence(state: State, min_chars=500) -> bool:
 
 
 def widen_search_terms(state: State, extra=None) -> State:
-    extras = list(extra or ["overview", "summary", "introduction", "appendix"])
-    state.query.meta.setdefault("search_terms", [])
-    merged = list({*state.query.meta["search_terms"], *extras})
-    state.query.meta["search_terms"] = merged
-    state.log("auto_refine", added=extras)
-    return state
+    return WidenSearchTerms(extra=extra).forward(state)
+
+
+class WidenSearchTerms(Op):
+    """Add related terms to `state.query.meta["search_terms"]` for broader grep."""
+
+    def __init__(self, extra=None, max_terms=16, seed_from_query=True):
+        self.extra = list(extra or ["overview", "summary", "introduction", "appendix"])
+        self.max_terms = max_terms
+        self.seed_from_query = seed_from_query
+        self.name = "WidenSearchTerms"
+
+    def forward(self, state: State) -> State:
+        before = list(state.query.meta.get("search_terms") or [])
+        seeds = list(before)
+        if self.seed_from_query and not seeds:
+            seeds = self._extract_terms(state.query.text)
+
+        merged = []
+        seen = set()
+        for term in seeds + self.extra:
+            if not term:
+                continue
+            norm = term.strip()
+            key = norm.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(norm)
+            if len(merged) >= self.max_terms:
+                break
+
+        state.query.meta["search_terms"] = merged
+        added = [t for t in merged if t not in before]
+        state.log(self.name, added=added, total=len(merged))
+        return state
+
+    def _extract_terms(self, text: str) -> list[str]:
+        terms = re.findall(r"[A-Za-zА-Яа-я0-9\-]{4,}", text)
+        uniq = []
+        seen = set()
+        for t in terms:
+            low = t.lower()
+            if low in seen:
+                continue
+            seen.add(low)
+            uniq.append(t)
+        return uniq
 
 
 # ---------- Healing wrappers ----------

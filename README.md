@@ -93,6 +93,8 @@ state = mem("Describe post rag pipeline")
 print(state.answer)
 ```
 
+Tip: `Grep` respects `state.query.meta["search_terms"]`, so prepend `WidenSearchTerms()` (or `LLMSearchTermExtractor`) to seed synonyms and section markers automatically.
+
 ## 🛠 Self-Healing Search Pipelines
 
 `SelfHeal` wraps any op with retries, fallback, and post-conditions.
@@ -128,12 +130,12 @@ A self-healing pipeline detects when search results are missing, weak, or irrele
 ```python
 mem0 = qr.Stack(
     qr.MultilingualNormalizer(),
+    qr.WidenSearchTerms(),
     qr.SelfHeal(
         op=qr.Stack(qr.Grep(dir="../data"), qr.Ranking(max_candidates=10)),
         fallback=PlanB,
         post_condition=lambda s: qr.has_candidates(s, 1),
-        on_weak=lambda s: qr.widen_search_terms(
-            s,
+        on_weak=qr.WidenSearchTerms(
             extra=[
                 "summary",
                 "abstract",
@@ -142,7 +144,7 @@ mem0 = qr.Stack(
                 "pattern",
                 "example",
                 "illustration",
-            ],
+            ]
         ),
         retries=1,
         backoff=0.25,
@@ -159,8 +161,7 @@ mem0 = qr.Stack(
         post_condition=lambda s: qr.has_evidence(s, min_chars=600),
     ),
     qr.StagnationGuard(
-        min_gain=1,
-        on_stall=lambda s: qr.widen_search_terms(s, extra=["summary", "abstract"]),
+        min_gain=1, on_stall=qr.WidenSearchTerms(extra=["summary", "abstract"])
     ),
     qr.SelfHeal(
         op=qr.ComposeAnswer(prompt="provide a concise answer based on the context"),
@@ -195,6 +196,7 @@ if __name__ == "__main__":
 | `Stack` | Sequential composition (like `keras.Sequential`) |
 | `Branch` | Parallel paths (like `keras.Functional`) |
 | `Loop` | Iterative refinement until convergence |
+| `WidenSearchTerms` | Expands query metadata with related terms before searching |
 | `ReferenceFollower` | Detects and follows references (e.g., “See Note 12”) |
 | `Planner` | Expands or rephrases queries if nothing found |
 
@@ -237,7 +239,7 @@ if __name__ == "__main__":
                  └───────────────────────────────────────────────────────┘
 
            ┌──────────────┐      ┌─────────────────┐
-           │  SafeGrep()  │◄────►│ StagnationGuard │──► widen search terms
+           │  SafeGrep()  │◄────►│ StagnationGuard │──► WidenSearchTerms()
            └──────────────┘      └─────────────────┘
                     │
               AdaptiveConcat()
