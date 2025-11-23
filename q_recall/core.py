@@ -39,7 +39,11 @@ class State:
     evidence: list[Evidence] = field(default_factory=list)
     answer: str | None = None
     budget: dict[str, float] = field(
-        default_factory=lambda: {"tokens": 2_000_000, "tokens_spent": 0, "seconds": None}
+        default_factory=lambda: {
+            "tokens": 2_000_000,
+            "tokens_spent": 0,
+            "seconds": None,
+        }
     )
     trace: list[TraceEvent] = field(default_factory=list)
 
