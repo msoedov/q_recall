@@ -95,6 +95,23 @@ print(state.answer)
 
 Tip: `Grep` respects `state.query.meta["search_terms"]`, so prepend `WidenSearchTerms()` (or `LLMSearchTermExtractor`) to seed synonyms and section markers automatically.
 
+### Budget guard (time + tokens)
+Keep long-running examples in check with `WithBudget`. It short-circuits when either wall-clock or a rough token estimate is exhausted and logs usage into `state.budget`.
+
+```python
+budgeted = qr.Stack(
+        qr.MultilingualNormalizer(),
+        qr.WidenSearchTerms(),
+        qr.WithBudget(seconds=2.5, tokens=80_000),
+        qr.Grep(dir="data"),
+        qr.Concat(max_window_size=8_000),
+        qr.ComposeAnswer(),
+    )
+
+state = budgeted("Find the onboarding steps")
+print(state.budget)  # {'tokens': 80000, 'tokens_spent': 1462, 'seconds': 2.5, ...}
+```
+
 ## 🛠 Self-Healing Search Pipelines
 
 `SelfHeal` wraps any op with retries, fallback, and post-conditions.
@@ -196,6 +213,7 @@ if __name__ == "__main__":
 | `Stack` | Sequential composition (like `keras.Sequential`) |
 | `Branch` | Parallel paths (like `keras.Functional`) |
 | `Loop` | Iterative refinement until convergence |
+| `WithBudget` | Stops when wall-clock or token budget is exhausted |
 | `WidenSearchTerms` | Expands query metadata with related terms before searching |
 | `ReferenceFollower` | Detects and follows references (e.g., “See Note 12”) |
 | `Planner` | Expands or rephrases queries if nothing found |

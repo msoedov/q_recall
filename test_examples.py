@@ -5,7 +5,7 @@ def test_basic():
     from examples.basic import mem0
 
     state = mem0("what is spec-driven development?")
-    assert len(state.trace) == snapshot(28)
+    assert len(state.trace) == snapshot(30)
 
 
 def test_sec_lease():

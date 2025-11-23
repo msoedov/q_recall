@@ -38,7 +38,9 @@ class State:
     candidates: list[Candidate] = field(default_factory=list)
     evidence: list[Evidence] = field(default_factory=list)
     answer: str | None = None
-    budget: dict[str, float] = field(default_factory=lambda: {"tokens": 2_000_000})
+    budget: dict[str, float] = field(
+        default_factory=lambda: {"tokens": 2_000_000, "tokens_spent": 0, "seconds": None}
+    )
     trace: list[TraceEvent] = field(default_factory=list)
 
     def log(self, op, **payload):
