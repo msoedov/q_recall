@@ -3,7 +3,7 @@ from rich.console import Console
 
 console = Console()
 
-__version__ = "0.0.0"  # replace with your actual version
+__version__ = "0.1.0"
 
 
 def banner():

@@ -9,4 +9,10 @@ description = "Post-RAG era search framework — context-rich, index-free."
 authors = [{ name = "Alexander Myasoedov", email = "msoedov@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["rich>=13.0.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "inline_snapshot>=0.11.1"]
+
+[tool.setuptools.packages.find]
+include = ["q_recall", "q_recall.*"]
