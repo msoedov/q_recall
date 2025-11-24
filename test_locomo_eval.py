@@ -1,4 +1,11 @@
+from pathlib import Path
+
 import pytest
+
+DATASET_PATH = Path(__file__).resolve().parents[1] / "data_eval" / "locomo10.json"
+
+if not DATASET_PATH.exists():
+    pytest.skip("locomo10 dataset not present; skipping locomo eval tests", allow_module_level=True)
 
 from examples import locomo_eval
 
