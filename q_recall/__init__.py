@@ -17,5 +17,6 @@ from .ops_history import PersistHistory
 from .ops_rank import Concat, ContextEnricher, Deduplicate, Lambda, Ranking
 from .ops_refs import ReferenceFollower
 from .ops_search import Glob, Grep
+from .eval import Case, CaseResult, EvalSuite
 
 __version__ = "0.1.0"
