@@ -196,27 +196,90 @@ class SafeGrep(Grep):
 class AdaptiveConcat(Concat):
     """Concats with graceful degradation and a sliding window."""
 
-    def forward(self, state: State) -> State:
-        try:
-            return super().forward(state)
-        except Exception:
-            text = ""
-            for c in state.candidates:
-                chunk = c.snippet
-                if not chunk:
-                    try:
-                        from .db import db  # lazy import if you hold a global
+    def __init__(self, max_window_size=100_000, chunk_limit=10_000):
+        super().__init__(max_window_size=max_window_size)
+        self.chunk_limit = max(1, min(chunk_limit, max_window_size))
+        self.name = "AdaptiveConcat"
 
-                        chunk = db.read(c.uri)
-                    except Exception:
-                        continue
-                piece = chunk[: min(10_000, len(chunk))]
-                if len(text) + len(piece) > self.max:
-                    break
-                text += f"\n\n----- {c.uri}\n{piece}"
+    def __call__(self, state: State) -> State:
+        segments: list[str] = []
+        total = 0
+        degraded = False
+
+        for cand in state.candidates:
+            try:
+                chunk = self._resolve_chunk(cand)
+            except Exception:
+                degraded = True
+                continue
+
+            if not chunk:
+                degraded = True
+                continue
+
+            if len(chunk) > self.chunk_limit:
+                chunk = chunk[: self.chunk_limit]
+                degraded = True
+
+            segment = f"\n\n----- {cand.uri}\n{chunk}"
+            segments.append(segment)
+            total += len(segment)
+
+            # Sliding window: if we overflow, drop oldest segments
+            if total > self.max:
+                degraded = True
+                while segments and total > self.max:
+                    if len(segments) == 1:
+                        segments[0] = segments[0][: self.max]
+                        total = len(segments[0])
+                        break
+                    removed = segments.pop(0)
+                    total -= len(removed)
+
+        if segments:
+            text = "".join(segments)
             state.evidence.append(Evidence(text=text))
-            state.log("AdaptiveConcat", size=len(text), degraded=True)
-            return state
+
+        if not segments and state.candidates:
+            degraded = True
+
+        state.log(
+            self.name,
+            size=total,
+            degraded=degraded,
+            kept=len(segments),
+            candidates=len(state.candidates),
+        )
+        return state
+
+    # Alias used by SelfHeal/Op wrappers that expect a `forward` method
+    forward = __call__
+
+    def _resolve_chunk(self, cand):
+        if cand.snippet:
+            return cand.snippet
+
+        try:
+            from .ops_rank import _safe_read
+        except Exception:
+            _safe_read = None
+
+        if _safe_read:
+            chunk = _safe_read(cand.uri)
+            if chunk:
+                return chunk
+
+        # Optional lazy DB-backed reader
+        try:
+            from .db import db
+
+            reader = getattr(db, "read", None)
+            if reader:
+                return reader(cand.uri)
+        except Exception:
+            return None
+
+        return None
 
 
 class StagnationGuard(Op):
