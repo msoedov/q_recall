@@ -7,57 +7,70 @@ It combines **LLM-driven reasoning** with, **Zero indexing**, **direct file sear
 > _"Retrieval was for context-poor models. Agentic search is for context-rich intelligence."_
 
 ---
-
 ## Bottom Line Up Front
 
-It’s the first Keras-like agentic search stack where you assemble live search pipelines using Stack, Branch, Loop, SelfHeal, and StagnationGuard—letting the agent read your actual files, not an index of them.
+It’s the first **Keras-like agentic search stack** where you assemble live search pipelines using **Stack, Branch, Loop, SelfHeal, and StagnationGuard**—letting the agent read your **actual files**, not an index of them.
 
-### Strategic thesis
-* Retrieval Augmented Generation (RAG) was built for context-poor LLMs that couldn’t read.
-* Context-rich LLMs don’t need index gymnastics—they need real data, live traversal, and reasoning flow.
+---
 
-q_recall is that framework.
+### Strategic Thesis
 
-### For modern LLMs, RAG is failing in predictable ways
+- Retrieval Augmented Generation (RAG) was built for **context-poor LLMs that couldn’t read**.
+- **Context-rich LLMs** don’t need index gymnastics—they need **real data, live traversal, and reasoning flow**.
+- `q_recall` is that framework.
 
-* Too Much Infrastructure
-  - Chunking → embedding → indexing → filtering → reranking → deduping → summarizing → re-summarizing.
-  - Six steps to answer a simple question.
+---
 
-* Indexes drift instantly
-  - Code and docs change hourly.
-  - Indexes get stale in minutes.
-  - Syncing is brittle and expensive.
+### For Modern LLMs, RAG Is Failing in Predictable Ways
 
-* Chunking destroys context
-  - Chunkers cannot understand:
-    - file boundaries
-    - semantic sections
-    - imports
-    - references
-    - loops
-    - cross-links
-    - diagrams
-    - schema relationships
+#### 1. Too Much Infrastructure
 
-  - Your agent gets a “micro-view” of your repo.
+- Chunking → embedding → indexing → filtering → reranking → deduping → summarizing → re-summarizing.
+- Six steps to answer a simple question.
 
-* Agents must follow references, not search snippets
-  - RAG can only return Top-K chunks.
-  - Agents need to:
-    - expand context dynamically
-    - follow references (“See Note 12”)
-    - detect when evidence is weak
-    - retry with a wider plan
-    - loop until convergence
+#### 2. Indexes Drift Instantly
 
-* RAG’s entire stack is now overkill for GPT-4.1 / Claude 3.7+
-  - New models can ingest 100K–200K tokens.
-  - They don’t need chunking—they need curation and flow control.
+- Code and docs change hourly.
+- Indexes get stale in minutes.
+- Syncing is brittle and expensive.
+
+#### 3. Chunking Destroys Context
+
+Chunkers cannot understand:
+
+- file boundaries
+- semantic sections
+- imports
+- references
+- loops
+- cross-links
+- diagrams
+- schema relationships
+
+Your agent gets a **“micro-view”** of your repo.
+
+#### 4. Agents Must Follow References, Not Search Snippets
+
+- RAG can only return **Top-K chunks**.
+- Agents need to:
+  - expand context dynamically
+  - follow references (“See Note 12”)
+  - detect when evidence is weak
+  - retry with a wider plan
+  - loop until convergence
+
+#### 5. RAG’s Entire Stack Is Now Overkill for GPT-4.1 / Claude 3.7+
+
+- New models can ingest **100K–200K tokens**.
+- They don’t need chunking—they need **curation and flow control**.
+
+In the new **context-abundant** world (2M+ tokens), we no longer need heavy RAG pipelines.
+
+---
+
+`q_recall` adopts the **Claude Code philosophy** — **no vector DB, no chunking, no reranking** — just smart agents that **navigate, reason, and follow references** across live files.
 
 
-In the new context-abundant world (2M+ tokens), we no longer need heavy RAG pipelines.
-`q_recall` adopts the Claude Code philosophy — **no vector DB, no chunking, no reranking** — just smart agents that **navigate, reason, and follow references** across live files.
 
 ### Key Ideas
 - **Zero-index, live filesystem search** — instant availability of new docs
