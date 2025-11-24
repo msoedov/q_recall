@@ -8,7 +8,55 @@ It combines **LLM-driven reasoning** with, **Zero indexing**, **direct file sear
 
 ---
 
-## 🚀 Why q_recall?
+## Bottom Line Up Front
+
+q_recall is an agentic search engine that eliminates vector databases, chunkers, rerankers, and indexing entirely—replacing them with direct, filesystem-native search pipelines that read, traverse, and reason end-to-end.
+
+It’s the first Keras-like agentic search stack where you assemble live search pipelines using Stack, Branch, Loop, SelfHeal, and StagnationGuard—letting the agent read your actual files, not an index of them.
+
+### Strategic thesis
+* Retrieval Augmented Generation (RAG) was built for context-poor LLMs that couldn’t read.
+* Context-rich LLMs don’t need index gymnastics—they need real data, live traversal, and reasoning flow.
+
+q_recall is that framework.
+
+### For modern LLMs, RAG is failing in predictable ways
+
+* Too Much Infrastructure
+  - Chunking → embedding → indexing → filtering → reranking → deduping → summarizing → re-summarizing.
+  - Six steps to answer a simple question.
+
+* Indexes drift instantly
+  - Code and docs change hourly.
+  - Indexes get stale in minutes.
+  - Syncing is brittle and expensive.
+
+* Chunking destroys context
+  - Chunkers cannot understand:
+    - file boundaries
+    - semantic sections
+    - imports
+    - references
+    - loops
+    - cross-links
+    - diagrams
+    - schema relationships
+
+  - Your agent gets a “micro-view” of your repo.
+
+* Agents must follow references, not search snippets
+  - RAG can only return Top-K chunks.
+  - Agents need to:
+    - expand context dynamically
+    - follow references (“See Note 12”)
+    - detect when evidence is weak
+    - retry with a wider plan
+    - loop until convergence
+
+* RAG’s entire stack is now overkill for GPT-4.1 / Claude 3.7+
+  - New models can ingest 100K–200K tokens.
+  - They don’t need chunking—they need curation and flow control.
+
 
 In the new context-abundant world (2M+ tokens), we no longer need heavy RAG pipelines.
 `q_recall` adopts the Claude Code philosophy — **no vector DB, no chunking, no reranking** — just smart agents that **navigate, reason, and follow references** across live files.
@@ -17,8 +65,31 @@ In the new context-abundant world (2M+ tokens), we no longer need heavy RAG pipe
 - **Zero-index, live filesystem search** — instant availability of new docs
 - **Composable pipelines** — build agentic stacks like `keras.Sequential`
 - **Branching, looping, planning** — for true multi-step, investigative agents
-- **Traceable execution** — every step is logged
+- **Traceable execution** — every step is logged into `State.trace`
 - **LLM-ready hooks** — plug in real LLMs for extraction or answering
+
+### The Real-World Problem It Solves
+
+Traditional RAG stacks are overkill for many developer-, repo-, and folder-scale problems. Here are some key issues:
+
+* **Indexing overhead**
+  * Chunk → embed → index → filter → rerank → sync — just to answer simple questions.
+  * Every schema/prompt/embedding change forces a re-ingest.
+* **Stale knowledge**
+  * Code and docs change fast; indexes drift immediately.
+  * You want “I just saved this file — ask the agent about it now.”
+* **Top-K tunnel vision**
+  * Classic retrieval returns n snippets and stops.
+  * Agents must follow references, jump files, widen search, and loop until they understand.
+* **Opaque behavior**
+  * It’s unclear why specific chunks were picked.
+  * Debugging relevance feels like guesswork.
+
+q_recall fixes this by:
+
+* Searching the real filesystem directly (no index, no DB).
+* Making control flow explicit: stacks, branches, loops, self-healing.
+* Logging every step into `State.trace`, so you can see exactly what happened.
 
 ## 🔧 Mental Model (read this first)
 
@@ -318,10 +389,9 @@ code_search = qr.Stack(
 
 ## 🛑 When *not* to use q_recall
 
--   You need \<50ms latency across millions of documents.
--   You need semantic similarity across diverse languages.
--   Your data is already in a vector DB.
-
+- You need <50ms latency over millions of documents.
+- You need language-agnostic semantic similarity across huge corpora.
+- Your data is already cleanly embedded in a vector database and you’re happy there.
 `q_recall` is for **developer-scale agentic search over local files**.
 
 -----------------------
