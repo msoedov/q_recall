@@ -38,3 +38,13 @@ def test_persist_history_example(tmp_path, monkeypatch):
     record = json.loads(lines[0])
     assert record["query"]["text"] == "what is spec-driven development?"
     assert record["answer"] == state.answer
+
+
+def test_query_router_example():
+    from examples.query_router import router
+
+    state = router("lease obligations overview")
+    assert state.query.meta.get("route") == "lease"
+
+    fallback = router("totally unrelated question")
+    assert fallback.query.meta.get("route") == "general"

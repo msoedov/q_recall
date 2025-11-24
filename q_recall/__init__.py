@@ -1,6 +1,6 @@
 from .answer import ComposeAnswer, LLMSearchTermExtractor, MultilingualNormalizer
 from .core import Candidate, Evidence, Query, State
-from .ops_agent import Branch, Gate, Loop, Stack, WithBudget
+from .ops_agent import Branch, Gate, Loop, QueryRouter, Stack, WithBudget
 from .ops_heal import (
     AdaptiveConcat,
     AutoHealPass,

@@ -226,6 +226,78 @@ class Branch(Op):
         return state
 
 
+class QueryRouter(Op):
+    """
+    Route a query/state to the first matching sub-pipeline.
+
+    Each route is a tuple of (name, predicate, op), evaluated in order. The first
+    predicate that returns truthy wins. If nothing matches, `default` is used
+    when provided; otherwise, the original state is returned (or an error is
+    raised if `require_match=True`).
+    """
+
+    def __init__(self, *routes, default=None, require_match=False, name="QueryRouter"):
+        self.routes = [self._normalize_route(r) for r in routes]
+        self.default = default
+        self.require_match = require_match
+        self.name = name
+
+    def __call__(self, state: State | str) -> State:
+        match state:
+            case State():
+                return self.forward(state)
+            case str():
+                return self.forward(State(query=Query(text=state)))
+            case _:
+                raise ValueError(f"Expected State or str, got {type(state)}")
+
+    def forward(self, state: State) -> State:
+        for label, predicate, op in self.routes:
+            try:
+                matched = bool(predicate(state))
+            except Exception as e:
+                state.log(self.name, route=label, matched=False, error=str(e), stage="predicate")
+                continue
+
+            if matched:
+                state.log(self.name, route=label, matched=True, stage="match")
+                return self._run(op, state, label)
+
+        if self.default is not None:
+            state.log(self.name, route="default", matched=True, stage="default")
+            return self._run(self.default, state, "default")
+
+        state.log(self.name, route=None, matched=False, stage="nomatch")
+        if self.require_match:
+            raise ValueError("No route matched query")
+        return state
+
+    def _run(self, op, state: State, label: str) -> State:
+        result = self._invoke(op, state)
+        result.log(self.name, route=label, matched=True, stage="done")
+        return result
+
+    def _invoke(self, op, state: State) -> State:
+        if isinstance(op, Op):
+            return op(state)
+        if callable(op):
+            out = op(state)
+            if isinstance(out, State):
+                return out
+        raise ValueError("Route target must be an Op or callable returning a State")
+
+    def _normalize_route(self, route):
+        try:
+            name, predicate, op = route
+        except Exception as e:
+            raise ValueError("Each route must be a (name, predicate, op) tuple") from e
+        if not callable(predicate):
+            raise TypeError(f"Route '{name}' predicate must be callable")
+        if not callable(op):
+            raise TypeError(f"Route '{name}' op must be callable")
+        return name, predicate, op
+
+
 class Loop(Op):
     def __init__(self, body: Op, until, max_iters=8):
         self.body = body
