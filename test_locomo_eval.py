@@ -2,10 +2,14 @@ from pathlib import Path
 
 import pytest
 
-DATASET_PATH = Path(__file__).resolve().parents[1] / "data_eval" / "locomo10.json"
+_ROOT = Path(__file__).resolve().parent
+DATASET_PATH = _ROOT / "data_eval" / "locomo10.json"
 
 if not DATASET_PATH.exists():
-    pytest.skip("locomo10 dataset not present; skipping locomo eval tests", allow_module_level=True)
+    pytest.skip(
+        "locomo10 dataset not present; skipping locomo eval tests",
+        allow_module_level=True,
+    )
 
 from examples import locomo_eval
 
@@ -39,3 +43,12 @@ def test_locomo_category_filter():
     assert metrics["micro_precision"] == pytest.approx(0.05771144278606965, rel=1e-6)
     assert metrics["micro_recall"] == pytest.approx(0.1383147853736089, rel=1e-6)
     assert metrics["micro_f1"] == pytest.approx(0.08144161010999296, rel=1e-6)
+
+
+def test_locomo_stack_matches_baseline():
+    stack = locomo_eval.make_locomo_stack(top_k=5)
+    metrics = locomo_eval.run_locomo_stack(stack, top_k=5)
+
+    assert metrics["questions"] == 1986
+    assert metrics["macro_f1"] == pytest.approx(0.10569441747689483, rel=1e-6)
+    assert metrics["micro_f1"] == pytest.approx(0.10263653483992466, rel=1e-6)

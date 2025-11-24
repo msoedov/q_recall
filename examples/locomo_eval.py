@@ -7,8 +7,10 @@ can handle larger QA sets.
 import json
 import re
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Callable, Iterable, Iterator
 
+import q_recall as qr
+from q_recall.ops_agent import Op
 from q_recall.eval import aggregate_prf, precision_recall_f1
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "data_eval" / "locomo10.json"
@@ -70,6 +72,98 @@ def run_locomo_baseline(
     aggregated["total_predicted"] = sum(r["predicted"] for r in per_question)
     aggregated["total_truth"] = sum(r["truth"] for r in per_question)
     return aggregated
+
+
+# ---------- Stack-friendly evaluation helpers ----------
+def _default_pred_extractor(state: qr.State, top_k: int) -> list[str]:
+    preds: list[str] = []
+    for cand in state.candidates:
+        cid = cand.meta.get("dia_id") if cand.meta else None
+        cid = cid or cand.uri
+        if cid:
+            preds.append(cid.replace("file://", ""))
+        if len(preds) >= top_k:
+            break
+    return preds
+
+
+def run_locomo_stack(
+    pipeline: Op | Callable[[qr.State | str], qr.State],
+    dataset_path: str | Path = DATA_PATH,
+    top_k: int = 5,
+    categories: set[int] | None = None,
+    predict: Callable[[qr.State, int], list[str]] | None = None,
+) -> dict[str, float]:
+    """Evaluate a qr.Stack/Op over LoCoMo10.
+
+    The pipeline should accept a State or str. Each State gets the conversation
+    injected via `state.query.meta['conversation']` so custom Ops can read the
+    turns directly.
+    """
+    raw = Path(dataset_path).read_text(encoding="utf-8")
+    dataset = json.loads(raw)
+    predict = predict or _default_pred_extractor
+
+    per_question: list[dict[str, float]] = []
+    for sample in dataset:
+        for qa in sample["qa"]:
+            if categories and qa.get("category") not in categories:
+                continue
+            state = qr.State(
+                query=qr.Query(
+                    text=qa["question"], meta={"conversation": sample["conversation"]}
+                )
+            )
+            out = pipeline(state) if callable(pipeline) else pipeline
+            if not isinstance(out, qr.State):
+                raise ValueError("pipeline must return a q_recall.State")
+            preds = predict(out, top_k)
+            per_question.append(precision_recall_f1(qa["evidence"], preds))
+
+    aggregated = aggregate_prf(per_question)
+    aggregated["questions"] = len(per_question)
+    aggregated["top_k"] = top_k
+    aggregated["total_true_positives"] = sum(r["true_positives"] for r in per_question)
+    aggregated["total_predicted"] = sum(r["predicted"] for r in per_question)
+    aggregated["total_truth"] = sum(r["truth"] for r in per_question)
+    return aggregated
+
+
+class LoCoMoRetriever(Op):
+    """Simple keyword-overlap retriever usable inside a Stack."""
+
+    def __init__(self, top_k: int = 5):
+        self.top_k = top_k
+        self.name = "LoCoMoRetriever"
+
+    def __call__(self, state: qr.State | str) -> qr.State:
+        match state:
+            case qr.State():
+                return self.forward(state)
+            case str():
+                return self.forward(qr.State(query=qr.Query(text=state)))
+            case _:
+                raise ValueError("Expected State or str")
+
+    def forward(self, state: qr.State) -> qr.State:
+        convo = state.query.meta.get("conversation")
+        if not isinstance(convo, dict):
+            state.log("locomo_retriever_error", reason="missing_conversation")
+            return state
+
+        turns = prepare_turns(convo)
+        preds = rank_by_overlap(state.query.text, turns)[: self.top_k]
+        state.candidates = [
+            qr.Candidate(uri=pid, score=1.0, snippet=None, meta={"dia_id": pid})
+            for pid in preds
+        ]
+        state.log("locomo_retriever", n=len(state.candidates))
+        return state
+
+
+def make_locomo_stack(top_k: int = 5) -> qr.Stack:
+    """Construct a Stack that runs the LoCoMo keyword retriever."""
+    return qr.Stack(LoCoMoRetriever(top_k=top_k))
 
 
 if __name__ == "__main__":
