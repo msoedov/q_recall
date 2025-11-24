@@ -504,7 +504,7 @@ code_search = qr.Stack(
 
 ---
 
-## 🧩 Extending the Framework
+## Extending the Framework
 
 ```python
 from q_recall.core import State
