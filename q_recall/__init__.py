@@ -13,6 +13,7 @@ from .ops_heal import (
     has_evidence,
     widen_search_terms,
 )
+from .ops_history import PersistHistory
 from .ops_rank import Concat, ContextEnricher, Deduplicate, Lambda, Ranking
 from .ops_refs import ReferenceFollower
 from .ops_search import Glob, Grep
