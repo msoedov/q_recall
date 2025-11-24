@@ -356,6 +356,7 @@ if __name__ == "__main__":
 | `WidenSearchTerms` | Expands query metadata with related terms before searching |
 | `ReferenceFollower` | Detects and follows references (e.g., “See Note 12”) |
 | `Planner` | Expands or rephrases queries if nothing found |
+| `Gate` | Asserts a predicate and optionally recovers via `on_fail` |
 
 ---
 
@@ -456,6 +457,23 @@ lease_agent = qr.Stack(
     qr.Ranking(max_candidates=30, keyword_boost=["lease", "Note", "Item 7"]),
     qr.Concat(max_window_size=160_000),
     qr.ComposeAnswer(prompt="Compute final lease obligations with adjustments:")
+)
+```
+
+### 3. Guarded Search (Gate predicate + recovery)
+```python
+guarded = qr.Stack(
+    qr.MultilingualNormalizer(),
+    qr.WidenSearchTerms(extra=["overview", "introduction"]),
+    qr.Grep(dir="data"),
+    qr.Gate(
+        predicate=lambda s: qr.has_candidates(s, 1),
+        on_fail=qr.WidenSearchTerms(extra=["appendix", "background"]),
+    ),
+    qr.Ranking(max_candidates=8),
+    qr.ContextEnricher(max_tokens=800),
+    qr.Concat(max_window_size=8_000),
+    qr.ComposeAnswer(prompt="Answer using only gathered context:"),
 )
 ```
 

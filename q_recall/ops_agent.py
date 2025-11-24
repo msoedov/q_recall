@@ -139,6 +139,67 @@ class WithBudget(Op):
         return state
 
 
+class Gate(Op):
+    """
+    Assertion/guardrail for pipelines.
+
+    - `predicate`: callable that returns truthy to continue.
+    - `on_fail`: optional callable/Op that runs when predicate is false.
+    - `raise_on_fail`: raise to trigger outer SelfHeal/WithBudget guards.
+    """
+
+    def __init__(self, predicate, on_fail=None, raise_on_fail=True, name="Gate"):
+        self.predicate = predicate
+        self.on_fail = on_fail
+        self.raise_on_fail = raise_on_fail
+        self.name = name
+
+    def __call__(self, state: State | str) -> State:
+        match state:
+            case State():
+                return self.forward(state)
+            case str():
+                return self.forward(State(query=Query(text=state)))
+            case _:
+                raise ValueError(f"Expected State or str, got {type(state)}")
+
+    def forward(self, state: State) -> State:
+        try:
+            ok = bool(self.predicate(state))
+        except Exception as e:
+            state.log("gate", ok=False, error=str(e))
+            if self.raise_on_fail:
+                raise
+            return state
+
+        if ok:
+            state.log("gate", ok=True, action="pass")
+            return state
+
+        state.log("gate", ok=False, action="fail")
+        if self.on_fail:
+            try:
+                recovered_state = self.on_fail(state)
+                state.log(
+                    "gate_recover",
+                    action=getattr(
+                        self.on_fail,
+                        "name",
+                        getattr(self.on_fail, "__name__", type(self.on_fail).__name__),
+                    ),
+                )
+                return recovered_state
+            except Exception as e:
+                state.log("gate_recover_error", error=str(e))
+                if self.raise_on_fail:
+                    raise
+                return state
+
+        if self.raise_on_fail:
+            raise ValueError("Gate predicate failed")
+        return state
+
+
 class Branch(Op):
     def __init__(self, *branches, merge="concat"):
         self.branches = branches
