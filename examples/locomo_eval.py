@@ -6,12 +6,12 @@ can handle larger QA sets.
 """
 import json
 import re
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
-from typing import Callable, Iterable, Iterator
 
 import q_recall as qr
-from q_recall.ops_agent import Op
 from q_recall.eval import aggregate_prf, precision_recall_f1
+from q_recall.ops_agent import Op
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "data_eval" / "locomo10.json"
 TOKEN_PATTERN = re.compile(r"\w+")
@@ -32,7 +32,9 @@ def tokenize(text: str) -> set[str]:
 
 def prepare_turns(conversation: dict) -> list[tuple[str, set[str]]]:
     """Flatten and tokenize conversation turns once per sample."""
-    return [(turn["dia_id"], tokenize(turn["text"])) for turn in iter_turns(conversation)]
+    return [
+        (turn["dia_id"], tokenize(turn["text"])) for turn in iter_turns(conversation)
+    ]
 
 
 def rank_by_overlap(question: str, turns: Iterable[tuple[str, set[str]]]) -> list[str]:

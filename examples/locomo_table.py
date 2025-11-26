@@ -56,7 +56,9 @@ def render_category_table(dataset: Path, top_k: int, categories: list[int]) -> N
     table.add_column("micro_F1", justify="right")
 
     for cat in categories:
-        metrics = run_locomo_baseline(dataset_path=dataset, top_k=top_k, categories={cat})
+        metrics = run_locomo_baseline(
+            dataset_path=dataset, top_k=top_k, categories={cat}
+        )
         table.add_row(
             str(cat),
             str(metrics["questions"]),

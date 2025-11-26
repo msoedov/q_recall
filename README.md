@@ -381,7 +381,7 @@ if __name__ == "__main__":
 | `Loop` | Iterative refinement until convergence |
 | `WithBudget` | Stops when wall-clock or token budget is exhausted |
 | `WidenSearchTerms` | Expands query metadata with related terms before searching |
-| `ReferenceFollower` | Detects and follows references (e.g., “See Note 12”) |
+| `ReferenceFollower` | Multi-hop reference + path hopping (e.g., “See Note 12”, `settings.py`) |
 | `Planner` | Expands or rephrases queries if nothing found |
 | `Gate` | Asserts a predicate and optionally recovers via `on_fail` |
 
@@ -404,7 +404,7 @@ Grep(dir="repo")    Glob(pattern="*.py")
          ↓
    ContextEnricher (snippets → full sections/files)
          ↓
-   ReferenceFollower (recursive, budget-aware)
+   ReferenceFollower (multi-hop, budget-aware)
          ↓
     AdaptiveConcat (max_tokens=2_000_000)
          ↓
@@ -480,7 +480,7 @@ lease_agent = qr.Stack(
     qr.Ranking(max_candidates=20),
     qr.ContextEnricher(max_tokens=2000),
     qr.Concat(max_window_size=80_000),
-    qr.ReferenceFollower(dir="sec"),
+    qr.ReferenceFollower(dir="sec", mode="aggressive", max_hops=12, prune=True),
     qr.Ranking(max_candidates=30, keyword_boost=["lease", "Note", "Item 7"]),
     qr.Concat(max_window_size=160_000),
     qr.ComposeAnswer(prompt="Compute final lease obligations with adjustments:")

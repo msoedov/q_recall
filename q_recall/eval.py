@@ -1,5 +1,5 @@
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Iterable, Sequence
 
 from .core import Query, State
 from .ops_agent import Op
@@ -105,8 +105,10 @@ def precision_recall_f1(
     tp = len(truth_set & pred_set)
     precision = tp / len(pred_dedup) if pred_dedup else 0.0
     recall = tp / len(truth_set) if truth_set else 0.0
-    f1 = 0.0 if (precision + recall) == 0 else 2 * precision * recall / (
-        precision + recall
+    f1 = (
+        0.0
+        if (precision + recall) == 0
+        else 2 * precision * recall / (precision + recall)
     )
     hit = 1.0 if tp > 0 else 0.0
     exact_match = 1.0 if truth_set and truth_set.issubset(pred_set) else 0.0

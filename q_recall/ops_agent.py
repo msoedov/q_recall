@@ -256,7 +256,13 @@ class QueryRouter(Op):
             try:
                 matched = bool(predicate(state))
             except Exception as e:
-                state.log(self.name, route=label, matched=False, error=str(e), stage="predicate")
+                state.log(
+                    self.name,
+                    route=label,
+                    matched=False,
+                    error=str(e),
+                    stage="predicate",
+                )
                 continue
 
             if matched:
