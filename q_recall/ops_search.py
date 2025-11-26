@@ -12,28 +12,52 @@ class Grep:
         ignore=r"\.(png|jpg|gif|pdf|bin|exe|zip)$",
         context=2,
         case_insensitive=True,
+        respect_path_hints=True,
     ):
         self.root = Path(dir)
         self.file_glob = file_glob
         self.ignore = re.compile(ignore)
         self.context = context
         self.case_insensitive = case_insensitive
+        self.respect_path_hints = respect_path_hints
         self.engine = self._detect_engine()
         self.name = "Grep"
 
     def __call__(self, state: State) -> State:
         terms = state.query.meta.get("search_terms") or [state.query.text]
         hits = []
+        bases = self._resolve_hint_paths(state) or [self.root]
+        unique_bases: list[Path] = []
+        seen_paths = set()
+        for b in bases:
+            resolved = b.resolve()
+            if resolved in seen_paths:
+                continue
+            seen_paths.add(resolved)
+            unique_bases.append(resolved)
+
         for term in terms:
             term = (term or "").strip()
             if not term:
                 continue
-            try:
-                hits.extend(self._search_term(term))
-            except Exception as e:
-                state.log("grep_error", term=term, error=str(e))
+            for base in unique_bases:
+                try:
+                    hits.extend(self._search_term(term, base))
+                except Exception as e:
+                    state.log(
+                        "grep_error",
+                        term=term,
+                        base=str(base),
+                        error=str(e),
+                    )
         state.candidates += hits
-        state.log("grep", matches=len(hits), terms=len(terms), engine=self.engine)
+        state.log(
+            "grep",
+            matches=len(hits),
+            terms=len(terms),
+            engine=self.engine,
+            bases=len(unique_bases),
+        )
         return state
 
     # ---------- internal helpers ----------
@@ -46,12 +70,36 @@ class Grep:
             return "grep"
         raise RuntimeError("Neither ripgrep (rg) nor grep is available on PATH.")
 
-    def _search_term(self, term: str) -> list[Candidate]:
+    def _resolve_hint_paths(self, state: State) -> list[Path]:
+        if not self.respect_path_hints:
+            return []
+        hints = state.query.meta.get("path_hints") or []
+        paths: list[Path] = []
+        seen = set()
+        for item in hints:
+            raw_path = ""
+            if isinstance(item, dict):
+                raw_path = str(item.get("path") or "").strip()
+            elif isinstance(item, str):
+                raw_path = item.strip()
+            if not raw_path:
+                continue
+            rel = Path(raw_path)
+            base = (self.root / rel).resolve()
+            key = str(base)
+            if key in seen:
+                continue
+            seen.add(key)
+            if base.exists():
+                paths.append(base)
+        return paths
+
+    def _search_term(self, term: str, base: Path) -> list[Candidate]:
         match self.engine:
             case "rg":
-                lines = self._run_cmd(self._rg_command(term))
+                lines = self._run_cmd(self._rg_command(term, base), cwd=base)
             case "grep":
-                lines = self._run_cmd(self._grep_command(term))
+                lines = self._run_cmd(self._grep_command(term, base), cwd=base)
             case _:
                 lines = []
 
@@ -67,7 +115,7 @@ class Grep:
             full_path = (
                 candidate_path
                 if candidate_path.is_absolute()
-                else self.root.joinpath(candidate_path).resolve()
+                else base.joinpath(candidate_path).resolve()
             )
             if self.ignore.search(str(full_path)):
                 continue
@@ -93,7 +141,7 @@ class Grep:
 
         return hits
 
-    def _rg_command(self, term: str) -> list[str]:
+    def _rg_command(self, term: str, root: Path) -> list[str]:
         cmd = [
             "rg",
             "--no-heading",
@@ -106,10 +154,10 @@ class Grep:
             cmd.append("-i")
         if self.file_glob and self.file_glob != "**/*":
             cmd += ["--glob", self.file_glob]
-        cmd += [term, str(self.root)]
+        cmd += [term, str(root)]
         return cmd
 
-    def _grep_command(self, term: str) -> list[str]:
+    def _grep_command(self, term: str, root: Path) -> list[str]:
         cmd = [
             "grep",
             "-R",
@@ -123,17 +171,17 @@ class Grep:
             cmd.append("-i")
         if self.file_glob and self.file_glob != "**/*":
             cmd += ["--include", self.file_glob]
-        cmd += [term, str(self.root)]
+        cmd += [term, str(root)]
         return cmd
 
-    def _run_cmd(self, cmd: list[str]) -> list[str]:
+    def _run_cmd(self, cmd: list[str], cwd: Path | None = None) -> list[str]:
         import subprocess
 
         proc = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            cwd=str(self.root),
+            cwd=str(cwd or self.root),
         )
         # grep returns 1 when no matches are found
         if proc.returncode not in (0, 1):

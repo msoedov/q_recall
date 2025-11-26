@@ -24,6 +24,7 @@ from .ops_rank import (
 )
 from .ops_refs import ReferenceFollower
 from .ops_search import Glob, Grep
+from .ops_agno import LLMFileNavigator
 from .eval import aggregate_prf, Case, CaseResult, EvalSuite, precision_recall_f1
 
 __version__ = "0.1.0"

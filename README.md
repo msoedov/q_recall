@@ -234,6 +234,33 @@ print(state.answer)
 
 Tip: `Grep` respects `state.query.meta["search_terms"]`, so prepend `WidenSearchTerms()` (or `LLMSearchTermExtractor`) to seed synonyms and section markers automatically.
 
+### Agno-powered path navigation
+Use an Agno agent to propose which folders/files to scan; `Grep` will honor the `path_hints` it writes into the query meta.
+
+```python
+from agno.agent import Agent
+from agno.models.openai import OpenAIChatModel
+import q_recall as qr
+
+navigator = qr.LLMFileNavigator(
+    dir=".",
+    agent=Agent(model=OpenAIChatModel(id="gpt-4o-mini")),
+    policy="reasoned-selection",
+)
+
+mem = qr.Stack(
+    navigator,
+    qr.WidenSearchTerms(),
+    qr.Grep(dir=".", respect_path_hints=True),
+    qr.ContextEnricher(max_tokens=1200),
+    qr.Concat(max_window_size=10_000),
+    qr.ComposeAnswer(),
+)
+
+state = mem("Audit the authentication flow and where permissions are enforced")
+print(state.query.meta["path_hints"])
+```
+
 ### Budget guard (time + tokens)
 Keep long-running examples in check with `WithBudget`. It short-circuits when either wall-clock or a rough token estimate is exhausted and logs usage into `state.budget`.
 
