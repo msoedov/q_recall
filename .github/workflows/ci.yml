@@ -28,4 +28,4 @@ jobs:
           mkdir data_eval
 
       - name: Run tests
-        run: pytest
+        run: pytest --inline-snapshot=disable
