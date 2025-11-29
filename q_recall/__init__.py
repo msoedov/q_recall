@@ -26,5 +26,6 @@ from .ops_rank import (
 )
 from .ops_refs import ReferenceFollower
 from .ops_search import Glob, Grep
+from .ops_cache import FingerprintCache
 
 __version__ = "0.1.0"

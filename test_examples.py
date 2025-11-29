@@ -48,3 +48,10 @@ def test_query_router_example():
 
     fallback = router("totally unrelated question")
     assert fallback.query.meta.get("route") == "general"
+
+
+def test_fingerprint_cache_example_runs():
+    from examples.fingerprint_cache import cached_search
+
+    state = cached_search("dopamine motivation")
+    assert any(ev.op == "FingerprintCache" for ev in state.trace)
