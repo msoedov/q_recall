@@ -1,5 +1,6 @@
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 
@@ -53,6 +54,15 @@ class State:
     def explain_trace(self):
         for ev in self.trace:
             print(ev.op, ev.payload)
+
+    def visualize(self, path: str | Path = "trace.html") -> Path:
+        """Render the current trace into a standalone HTML file."""
+        from .flow_inspector import render_trace_html
+
+        path = Path(path)
+        html = render_trace_html(self.trace)
+        path.write_text(html, encoding="utf-8")
+        return path
 
 
 def dedup_candidates(cands: list[Candidate]) -> list[Candidate]:
