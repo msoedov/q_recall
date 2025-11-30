@@ -3,6 +3,7 @@ from .core import Candidate, Evidence, Query, State
 from .eval import Case, CaseResult, EvalSuite, aggregate_prf, precision_recall_f1
 from .ops_agent import Branch, Gate, Loop, QueryRouter, Stack, WithBudget
 from .ops_agno import LLMFileNavigator
+from .ops_cache import FingerprintCache
 from .ops_heal import (
     AdaptiveConcat,
     AutoHealPass,
@@ -26,6 +27,5 @@ from .ops_rank import (
 )
 from .ops_refs import ReferenceFollower
 from .ops_search import Glob, Grep
-from .ops_cache import FingerprintCache
 
 __version__ = "0.1.0"

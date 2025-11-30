@@ -2,20 +2,21 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .core import TraceEvent
 
 
-def render_trace_html(trace: Iterable["TraceEvent"]) -> str:
+def render_trace_html(trace: Iterable[TraceEvent]) -> str:
     """Return standalone HTML containing the FlowInspector UI with embedded trace data."""
     trace_json = _trace_to_json(trace)
     return TRACE_HTML_TEMPLATE.replace("__TRACE_DATA__", trace_json)
 
 
-def _trace_to_json(trace: Iterable["TraceEvent"]) -> str:
+def _trace_to_json(trace: Iterable[TraceEvent]) -> str:
     events = []
     t0 = None
     for idx, ev in enumerate(trace):

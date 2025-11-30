@@ -25,6 +25,8 @@ if __name__ == "__main__":
     print("First call candidates:", len(first.candidates))
 
     second = cached_search("motivation dopamine focus")
-    fp_event = next(ev.payload for ev in reversed(second.trace) if ev.op == "FingerprintCache")
+    fp_event = next(
+        ev.payload for ev in reversed(second.trace) if ev.op == "FingerprintCache"
+    )
     print("Second call cache hits:", fp_event.get("hits"))
     print(second.answer)

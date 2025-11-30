@@ -1,9 +1,9 @@
 import hashlib
 import re
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 from .core import Candidate, Evidence, State
 from .ops_agent import Op
@@ -41,7 +41,9 @@ class FingerprintCache(Op):
         self.shingle_size = max(2, shingle_size)
         self.signature_size = max(4, signature_size)
         self.min_similarity = (
-            0.72 if (min_similarity is None and match == "similar_blocks") else min_similarity
+            0.72
+            if (min_similarity is None and match == "similar_blocks")
+            else min_similarity
         )
         if self.min_similarity is None:
             self.min_similarity = 0.95
@@ -191,7 +193,9 @@ class FingerprintCache(Op):
                 best = entry
         return best, best_sim
 
-    def _remember(self, signature: tuple[int, ...], text: str, uri: str | None, ts: float):
+    def _remember(
+        self, signature: tuple[int, ...], text: str, uri: str | None, ts: float
+    ):
         entry = _Entry(signature=signature, text=text, uri=uri, ts=ts)
         self._entries.append(entry)
         if uri:

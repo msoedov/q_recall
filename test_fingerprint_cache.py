@@ -28,7 +28,9 @@ def test_fingerprint_cache_hits_similar_candidates(tmp_path):
     second = pipeline("Alpha cache")
     payload = _fp_event(second)
     assert payload["hits"] >= 1
-    assert any(c.meta.get("fingerprint_cache", {}).get("hit") for c in second.candidates)
+    assert any(
+        c.meta.get("fingerprint_cache", {}).get("hit") for c in second.candidates
+    )
 
 
 def test_fingerprint_cache_reuses_snippet_without_disk(monkeypatch, tmp_path):
@@ -39,11 +41,16 @@ def test_fingerprint_cache_reuses_snippet_without_disk(monkeypatch, tmp_path):
     cache = qr.FingerprintCache(ttl="session")
     state1 = State(
         query=Query(text="demo"),
-        candidates=[Candidate(uri=uri, snippet="Cache keeps fragments warm for reuse.")],
+        candidates=[
+            Candidate(uri=uri, snippet="Cache keeps fragments warm for reuse.")
+        ],
     )
     cache(state1)
 
-    state2 = State(query=Query(text="demo"), candidates=[Candidate(uri=uri, snippet=None, meta={"line": 1})])
+    state2 = State(
+        query=Query(text="demo"),
+        candidates=[Candidate(uri=uri, snippet=None, meta={"line": 1})],
+    )
 
     def boom(*args, **kwargs):
         raise RuntimeError("disk read")

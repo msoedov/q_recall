@@ -16,10 +16,12 @@ def test_reference_follower_multi_hop(tmp_path):
     seed = qr.Candidate(uri=f"file://{main}", snippet=main.read_text())
     state = qr.State(query=qr.Query(text="lease obligations"), candidates=[seed])
 
-    follower = qr.ReferenceFollower(dir=str(tmp_path), mode="aggressive", max_hops=3, prune=False)
+    follower = qr.ReferenceFollower(
+        dir=str(tmp_path), mode="aggressive", max_hops=3, prune=False
+    )
     out = follower(state)
 
-    names = {Path(c.uri.replace('file://', '')).name for c in out.candidates}
+    names = {Path(c.uri.replace("file://", "")).name for c in out.candidates}
     assert "note2.txt" in names
     assert "appendix_a.txt" in names
     assert "middleware.py" in names
@@ -31,7 +33,9 @@ def test_reference_follower_prunes_when_stalled(tmp_path):
     seed = qr.Candidate(uri=f"file://{doc}", snippet=doc.read_text())
     state = qr.State(query=qr.Query(text="nothing"), candidates=[seed])
 
-    follower = qr.ReferenceFollower(dir=str(tmp_path), mode="aggressive", max_hops=5, prune=True)
+    follower = qr.ReferenceFollower(
+        dir=str(tmp_path), mode="aggressive", max_hops=5, prune=True
+    )
     out = follower(state)
 
     assert len(out.candidates) == 1
