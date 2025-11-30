@@ -6,11 +6,12 @@ can handle larger QA sets.
 """
 import json
 import re
+import time
 from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 
 import q_recall as qr
-from q_recall.eval import aggregate_prf, precision_recall_f1
+from q_recall.eval import aggregate_prf, precision_recall_f1, summarize_latencies
 from q_recall.ops_agent import Op
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "data_eval" / "locomo10.json"
@@ -53,19 +54,31 @@ def run_locomo_baseline(
     dataset_path: str | Path = DATA_PATH,
     top_k: int = 5,
     categories: set[int] | None = None,
+    capture_latency: bool = False,
+    max_questions: int | None = None,
 ) -> dict[str, float]:
     """Run the keyword baseline over the LoCoMo10 QA pairs."""
     raw = Path(dataset_path).read_text(encoding="utf-8")
     dataset = json.loads(raw)
 
     per_question: list[dict[str, float]] = []
+    latencies: list[float] = []
+    seen = 0
     for sample in dataset:
         turns = prepare_turns(sample["conversation"])
         for qa in sample["qa"]:
             if categories and qa.get("category") not in categories:
                 continue
+            if max_questions is not None and seen >= max_questions:
+                break
+            started = time.perf_counter()
             preds = rank_by_overlap(qa["question"], turns)[:top_k]
+            if capture_latency:
+                latencies.append((time.perf_counter() - started) * 1000.0)
             per_question.append(precision_recall_f1(qa["evidence"], preds))
+            seen += 1
+        if max_questions is not None and seen >= max_questions:
+            break
 
     aggregated = aggregate_prf(per_question)
     aggregated["questions"] = len(per_question)
@@ -73,6 +86,8 @@ def run_locomo_baseline(
     aggregated["total_true_positives"] = sum(r["true_positives"] for r in per_question)
     aggregated["total_predicted"] = sum(r["predicted"] for r in per_question)
     aggregated["total_truth"] = sum(r["truth"] for r in per_question)
+    if capture_latency:
+        aggregated["latency_ms"] = summarize_latencies(latencies)
     return aggregated
 
 
@@ -95,6 +110,8 @@ def run_locomo_stack(
     top_k: int = 5,
     categories: set[int] | None = None,
     predict: Callable[[qr.State, int], list[str]] | None = None,
+    capture_latency: bool = False,
+    max_questions: int | None = None,
 ) -> dict[str, float]:
     """Evaluate a qr.Stack/Op over LoCoMo10.
 
@@ -107,20 +124,30 @@ def run_locomo_stack(
     predict = predict or _default_pred_extractor
 
     per_question: list[dict[str, float]] = []
+    latencies: list[float] = []
+    seen = 0
     for sample in dataset:
         for qa in sample["qa"]:
             if categories and qa.get("category") not in categories:
                 continue
+            if max_questions is not None and seen >= max_questions:
+                break
             state = qr.State(
                 query=qr.Query(
                     text=qa["question"], meta={"conversation": sample["conversation"]}
                 )
             )
+            started = time.perf_counter()
             out = pipeline(state) if callable(pipeline) else pipeline
             if not isinstance(out, qr.State):
                 raise ValueError("pipeline must return a q_recall.State")
             preds = predict(out, top_k)
             per_question.append(precision_recall_f1(qa["evidence"], preds))
+            if capture_latency:
+                latencies.append((time.perf_counter() - started) * 1000.0)
+            seen += 1
+        if max_questions is not None and seen >= max_questions:
+            break
 
     aggregated = aggregate_prf(per_question)
     aggregated["questions"] = len(per_question)
@@ -128,6 +155,8 @@ def run_locomo_stack(
     aggregated["total_true_positives"] = sum(r["true_positives"] for r in per_question)
     aggregated["total_predicted"] = sum(r["predicted"] for r in per_question)
     aggregated["total_truth"] = sum(r["truth"] for r in per_question)
+    if capture_latency:
+        aggregated["latency_ms"] = summarize_latencies(latencies)
     return aggregated
 
 
@@ -166,6 +195,22 @@ class LoCoMoRetriever(Op):
 def make_locomo_stack(top_k: int = 5) -> qr.Stack:
     """Construct a Stack that runs the LoCoMo keyword retriever."""
     return qr.Stack(LoCoMoRetriever(top_k=top_k))
+
+
+def benchmark_locomo_stack(
+    top_k: int = 5,
+    categories: set[int] | None = None,
+    max_questions: int | None = 50,
+) -> dict[str, float]:
+    """Lightweight benchmark with latency stats for the LoCoMo stack."""
+    stack = make_locomo_stack(top_k=top_k)
+    return run_locomo_stack(
+        stack,
+        top_k=top_k,
+        categories=categories,
+        capture_latency=True,
+        max_questions=max_questions,
+    )
 
 
 if __name__ == "__main__":

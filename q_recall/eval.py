@@ -1,5 +1,7 @@
+import time
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
+from statistics import mean
 
 from .core import Query, State
 from .ops_agent import Op
@@ -38,6 +40,7 @@ class CaseResult:
     failures: list[str] = field(default_factory=list)
     error: str | None = None
     state: State | None = None
+    latency_ms: float | None = None
 
 
 class EvalSuite:
@@ -52,11 +55,13 @@ class EvalSuite:
     ) -> list[CaseResult]:
         results: list[CaseResult] = []
         for case in self.cases:
+            started = time.perf_counter()
             try:
                 state = self._run_case(pipeline, case.query)
                 result = case.evaluate(state)
             except Exception as e:
                 result = CaseResult(case=case, passed=False, error=str(e))
+            result.latency_ms = (time.perf_counter() - started) * 1000.0
             results.append(result)
             if stop_on_fail and not result.passed:
                 break
@@ -67,6 +72,13 @@ class EvalSuite:
         total = len(results)
         passed = sum(1 for r in results if r.passed)
         print(f"{self.name}: {passed}/{total} passed")
+        latencies = [r.latency_ms for r in results if r.latency_ms is not None]
+        if latencies:
+            print(
+                f"  latency ms: p50={percentile(latencies, 50):.1f}, "
+                f"p95={percentile(latencies, 95):.1f}, "
+                f"avg={mean(latencies):.1f}"
+            )
         for r in results:
             status = "PASS" if r.passed else "FAIL"
             label = r.case.name or r.case.query
@@ -176,4 +188,33 @@ def aggregate_prf(rows: Sequence[dict[str, float]]) -> dict[str, float]:
         "micro_precision": micro_precision,
         "micro_recall": micro_recall,
         "micro_f1": micro_f1,
+    }
+
+
+def percentile(values: Sequence[float], pct: float) -> float:
+    if not values:
+        return 0.0
+    if pct <= 0:
+        return min(values)
+    if pct >= 100:
+        return max(values)
+    ordered = sorted(values)
+    k = (len(ordered) - 1) * (pct / 100)
+    lower = int(k)
+    upper = min(lower + 1, len(ordered) - 1)
+    if lower == upper:
+        return ordered[lower]
+    fraction = k - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
+
+
+def summarize_latencies(latencies: Sequence[float]) -> dict[str, float]:
+    """Return common latency statistics in milliseconds."""
+    if not latencies:
+        return {"avg_ms": 0.0, "p50_ms": 0.0, "p95_ms": 0.0, "max_ms": 0.0}
+    return {
+        "avg_ms": mean(latencies),
+        "p50_ms": percentile(latencies, 50),
+        "p95_ms": percentile(latencies, 95),
+        "max_ms": max(latencies),
     }

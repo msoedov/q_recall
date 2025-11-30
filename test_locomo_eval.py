@@ -52,3 +52,12 @@ def test_locomo_stack_matches_baseline():
     assert metrics["questions"] == 1986
     assert metrics["macro_f1"] == pytest.approx(0.10569441747689483, rel=1e-6)
     assert metrics["micro_f1"] == pytest.approx(0.10263653483992466, rel=1e-6)
+
+
+def test_locomo_latency_metrics_with_cap():
+    metrics = locomo_eval.run_locomo_baseline(
+        top_k=3, max_questions=10, capture_latency=True, categories={1, 2}
+    )
+
+    assert metrics["questions"] == 10
+    assert metrics["latency_ms"]["p95_ms"] >= 0.0

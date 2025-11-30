@@ -1,6 +1,13 @@
 from .answer import ComposeAnswer, LLMSearchTermExtractor, MultilingualNormalizer
 from .core import Candidate, Evidence, Query, State
-from .eval import Case, CaseResult, EvalSuite, aggregate_prf, precision_recall_f1
+from .eval import (
+    Case,
+    CaseResult,
+    EvalSuite,
+    aggregate_prf,
+    precision_recall_f1,
+    summarize_latencies,
+)
 from .ops_agent import Branch, Gate, Loop, QueryRouter, Stack, WithBudget
 from .ops_agno import LLMFileNavigator
 from .ops_cache import FingerprintCache
